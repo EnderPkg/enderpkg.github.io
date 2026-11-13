@@ -6,7 +6,7 @@ compatibility_date = "2026-11-13"
 [[d1_databases]]
 binding = "DB"
 database_name = "endpkg-db"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "0e749530-25ed-44bd-aa22-35e681034566"
 
 [vars]
 CORS_ORIGIN = "https://enderpkg.github.io"
