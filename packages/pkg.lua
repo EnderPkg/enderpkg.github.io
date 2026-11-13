@@ -5,7 +5,6 @@
 -- #version: "0.3.1"
 -- #license: "MIT"
 -- #platform: "cc-tweaked"
--- #slug: "pkg"
 -- #dependencies: []
 
 local API = "https://enderpkg-api.clown-speck.workers.dev/api"
