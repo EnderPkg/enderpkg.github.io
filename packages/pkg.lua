@@ -3,7 +3,7 @@
 -- #name: "EnderPkgCli"
 -- #description: "The Package manager for EnderPkg."
 -- #author: "EnderPkg"
--- #version: "0.2.0"
+-- #version: "0.3.0"
 -- #license: "MIT"
 -- #platform: "cc-tweaked"
 -- #dependencies: []
