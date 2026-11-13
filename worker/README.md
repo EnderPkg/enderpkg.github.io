@@ -1,53 +1,31 @@
+# EndPkg Worker
 
-# EndPkg API
+Cloudflare Worker API und D1-Schema.
 
-Backend for the EndPkg package manager.
+## Dateien
 
-## Requirements
+- `src/header.js`: reiner Parser für EndPkg-Metadaten
+- `src/index.js`: öffentliche Lese-API und eingeschränkter Quell-Download
+- `schema.sql`: D1-Schema
+- `test/`: automatisierte Node-Tests
 
-- Node.js
-- Cloudflare account
-- Cloudflare Workers
-- Cloudflare D1
-- Cloudflare R2
-
-## Install
+## Test
 
 ```bash
-cd worker
-npm install
+npm test
 ```
 
-## Development
+## D1
 
-```bash
-npm run dev
-```
-
-## Database
-
-Create the D1 database and configure its ID in wrangler.toml.
-
-Initialize the schema:
-
-```bash
-npm run db:init
-```
+`schema.sql` im D1 SQL-Editor ausführen. Danach D1 als Binding `DB` mit dem Worker verbinden.
 
 ## Deploy
 
+`database_id` in `wrangler.toml` ersetzen, dann:
+
 ```bash
-npm run deploy
+npm install
+npx wrangler deploy
 ```
 
-## API
-
-- GET /api/health
-- GET /api/packages
-- GET /api/packages?search=name
-- GET /api/packages/:slug
-- GET /api/packages/:slug/:version/download
-- POST /api/submissions
-
-New submissions are stored wit
-h pending status.
+Das Projekt verwendet kein R2.

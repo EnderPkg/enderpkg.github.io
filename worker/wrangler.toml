@@ -1,0 +1,12 @@
+name = "enderpkg-api"
+main = "src/index.js"
+compatibility_date = "2026-11-13"
+
+# Replace this with your real Cloudflare D1 database ID.
+[[d1_databases]]
+binding = "DB"
+database_name = "endpkg-db"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[vars]
+CORS_ORIGIN = "https://enderpkg.github.io"

@@ -1,7 +1,5 @@
-
 import test from "node:test";
 import assert from "node:assert/strict";
-
 import { parseEndpkgHeader } from "../src/header.js";
 
 const validPackage = `-- #enderpkg
@@ -19,9 +17,8 @@ const validPackage = `-- #enderpkg
 print("Hello from EndPkg!")
 `;
 
-test("accepts a valid EndPkg package", () => {
+test("accepts valid package metadata and returns Lua source", () => {
   const result = parseEndpkgHeader(validPackage);
-
   assert.equal(result.ok, true);
   assert.equal(result.metadata.name, "Example Package");
   assert.equal(result.metadata.version, "1.0.0");
@@ -29,116 +26,77 @@ test("accepts a valid EndPkg package", () => {
   assert.match(result.sourceCode, /print\("Hello from EndPkg!"\)/);
 });
 
-test("rejects a missing marker", () => {
-  const result = parseEndpkgHeader(
-    '-- #name: "Example"\n-- #author: "Tester"\n-- #version: "1.0.0"'
-  );
-
-  assert.equal(result.ok, false);
+test("requires exact marker on first line", () => {
+  assert.equal(parseEndpkgHeader('\n-- #enderpkg\n').ok, false);
+  assert.equal(parseEndpkgHeader('--  #enderpkg\n').ok, false);
+  assert.equal(parseEndpkgHeader('-- #other\n').ok, false);
 });
 
-test("rejects a marker that is not on line 1", () => {
-  const result = parseEndpkgHeader(
-    '\n-- #enderpkg\n-- #name: "Example"\n-- #author: "Tester"\n-- #version: "1.0.0"'
-  );
-
-  assert.equal(result.ok, false);
-});
-
-test("rejects missing required fields", () => {
-  const result = parseEndpkgHeader(
-    '-- #enderpkg\n-- #name: "Example"\n-- #version: "1.0.0"\n'
-  );
-
+test("requires name, author and version", () => {
+  const result = parseEndpkgHeader('-- #enderpkg\n-- #name: "x"\n-- #version: "1.0.0"\n');
   assert.equal(result.ok, false);
   assert.match(result.error, /author/);
 });
 
-test("rejects duplicate fields", () => {
-  const result = parseEndpkgHeader(
-    '-- #enderpkg\n' +
-    '-- #name: "First"\n' +
-    '-- #name: "Second"\n' +
-    '-- #author: "Tester"\n' +
-    '-- #version: "1.0.0"\n'
+test("rejects duplicate and unknown fields", () => {
+  const duplicate = parseEndpkgHeader(
+    '-- #enderpkg\n-- #name: "a"\n-- #name: "b"\n-- #author: "x"\n-- #version: "1.0.0"\n'
   );
+  assert.match(duplicate.error, /Duplicate/);
 
-  assert.equal(result.ok, false);
-  assert.match(result.error, /Duplicate/);
+  const unknown = parseEndpkgHeader(
+    '-- #enderpkg\n-- #name: "a"\n-- #author: "x"\n-- #version: "1.0.0"\n-- #wat: "x"\n'
+  );
+  assert.match(unknown.error, /Unknown/);
 });
 
-test("rejects unknown fields", () => {
-  const result = parseEndpkgHeader(
-    '-- #enderpkg\n' +
-    '-- #name: "Example"\n' +
-    '-- #author: "Tester"\n' +
-    '-- #version: "1.0.0"\n' +
-    '-- #unknown: "value"\n'
+test("rejects malformed JSON and invalid semantic versions", () => {
+  const malformed = parseEndpkgHeader(
+    '-- #enderpkg\n-- #name: Example\n-- #author: "x"\n-- #version: "1.0.0"\n'
   );
+  assert.equal(malformed.ok, false);
 
-  assert.equal(result.ok, false);
-  assert.match(result.error, /Unknown metadata field/);
+  const badVersion = parseEndpkgHeader(
+    '-- #enderpkg\n-- #name: "a"\n-- #author: "x"\n-- #version: "1.0"\n'
+  );
+  assert.match(badVersion.error, /MAJOR.MINOR.PATCH/);
 });
 
-test("rejects invalid version numbers", () => {
-  const result = parseEndpkgHeader(
-    '-- #enderpkg\n' +
-    '-- #name: "Example"\n' +
-    '-- #author: "Tester"\n' +
-    '-- #version: "1.0"\n'
+test("accepts empty dependencies and rejects URL dependencies", () => {
+  const empty = parseEndpkgHeader(
+    '-- #enderpkg\n-- #name: "a"\n-- #author: "x"\n-- #version: "1.0.0"\n-- #dependencies: []\n\n'
   );
+  assert.equal(empty.ok, true);
 
-  assert.equal(result.ok, false);
-  assert.match(result.error, /MAJOR.MINOR.PATCH/);
+  const url = parseEndpkgHeader(
+    '-- #enderpkg\n-- #name: "a"\n-- #author: "x"\n-- #version: "1.0.0"\n-- #dependencies: ["https://example.com/a.lua"]\n'
+  );
+  assert.equal(url.ok, false);
 });
 
-test("rejects malformed JSON metadata", () => {
+test("rejects malformed dependency arrays", () => {
   const result = parseEndpkgHeader(
-    '-- #enderpkg\n' +
-    '-- #name: Example\n' +
-    '-- #author: "Tester"\n' +
-    '-- #version: "1.0.0"\n'
+    '-- #enderpkg\n-- #name: "a"\n-- #author: "x"\n-- #version: "1.0.0"\n-- #dependencies: [\n-- "bad"\n\n'
   );
-
   assert.equal(result.ok, false);
 });
 
-test("rejects invalid dependencies", () => {
-  const result = parseEndpkgHeader(
-    '-- #enderpkg\n' +
-    '-- #name: "Example"\n' +
-    '-- #author: "Tester"\n' +
-    '-- #version: "1.0.0"\n' +
-    '-- #dependencies: ["https://evil.example/file.lua"]\n'
-  );
-
-  assert.equal(result.ok, false);
-  assert.match(result.error, /Invalid dependency/);
-});
-
-test("rejects headers longer than 20 lines", () => {
+test("enforces the 20-line header limit", () => {
   const comments = Array(20).fill("-- ordinary comment").join("\n");
-
   const result = parseEndpkgHeader(
-    `-- #enderpkg\n${comments}\n` +
-    '-- #name: "Example"\n' +
-    '-- #author: "Tester"\n' +
-    '-- #version: "1.0.0"\n'
+    `-- #enderpkg\n${comments}\n-- #name: "a"\n-- #author: "x"\n-- #version: "1.0.0"\n`
   );
-
   assert.equal(result.ok, false);
-  assert.match(result.error, /20-line limit/);
+  assert.match(result.error, /20-line/);
 });
 
-test("accepts Windows line endings", () => {
-  const source = validPackage.replace(/\n/g, "\r\n");
-  const result = parseEndpkgHeader(source);
-
-  assert.equal(result.ok, true);
+test("handles Windows line endings and UTF-8 BOM", () => {
+  const windows = validPackage.replace(/\n/g, "\r\n");
+  assert.equal(parseEndpkgHeader(windows).ok, true);
+  assert.equal(parseEndpkgHeader("\uFEFF" + validPackage).ok, true);
 });
 
-test("rejects non-string input", () => {
-  const result = parseEndpkgHeader(null);
-
-  assert.equal(result.ok, false);
+test("rejects non-string and oversized input", () => {
+  assert.equal(parseEndpkgHeader(null).ok, false);
+  assert.equal(parseEndpkgHeader("x".repeat(2 * 1024 * 1024 + 1)).ok, false);
 });

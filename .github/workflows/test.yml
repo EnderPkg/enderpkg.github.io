@@ -1,4 +1,3 @@
-
 name: EndPkg Tests
 
 on:
@@ -7,10 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
