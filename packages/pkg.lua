@@ -1,5 +1,11 @@
--- EndPkg Client
--- Version: 0.1.0
+-- #enderpkg
+-- #name: "EnderPkgCli"
+-- #description: "The Package manager for EnderPkg."
+-- #author: "EnderPkg"
+-- #version: "0.1.0"
+-- #license: "MIT"
+-- #platform:"cc-tweaked"
+-- #dependencies: []
 
 local API = "https://enderpkg-api.clown-speck.workers.dev/api"
 local INSTALL_DIR = "/usr/bin"
